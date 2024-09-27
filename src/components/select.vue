@@ -22,11 +22,11 @@ const init = () => {
 
   const geometry = new THREE.BufferGeometry();
   const attribute =  new THREE.BufferAttribute(new Float32Array([ 0, 0, 0, //顶点1坐标
-      10, 0, 0, //顶点2坐标
-      0, 10, 0, //顶点3坐标
-      0, 0, 10, //顶点4坐标
-      0, 0, 10, //顶点5坐标
-      10, 0, 10,]),3)
+    10, 0, 0, //顶点2坐标
+    0, 10, 0, //顶点3坐标
+    0, 0, 10, //顶点4坐标
+    0, 0, 10, //顶点5坐标
+    10, 0, 10,]),3)
   geometry.setAttribute('position',attribute)
   // 每个顶点的法线数据和顶点位置数据一一对应
   const normals = new Float32Array([
@@ -40,16 +40,16 @@ const init = () => {
 // 设置几何体的顶点法线属性.attributes.normal
   geometry.attributes.normal = new THREE.BufferAttribute(normals, 3);
   //定义点模型
- /*
+  /*
 
- const material = new THREE.PointsMaterial({
-    color: 0xffff00,
-    size: 10.0 //点对象像素尺寸
-  });
+  const material = new THREE.PointsMaterial({
+     color: 0xffff00,
+     size: 10.0 //点对象像素尺寸
+   });
 
-  //const material = new THREE.MeshPhongMaterial({color:'#fafafa'}) //高光材质
+   //const material = new THREE.MeshPhongMaterial({color:'#fafafa'}) //高光材质
 
-  const cube = new THREE.Points(geometry, material)*/
+   const cube = new THREE.Points(geometry, material)*/
 
   /*
   * 定义线模型
@@ -70,7 +70,7 @@ const init = () => {
   //
   // scene.add(cube)
   // 创建相机
- const camera = new THREE.PerspectiveCamera(75, threeValue.value.clientWidth / threeValue.value.clientHeight, 0.1, 1000)
+  const camera = new THREE.PerspectiveCamera(75, threeValue.value.clientWidth / threeValue.value.clientHeight, 0.1, 1000)
 
   // const width = threeValue.value.clientWidth; //canvas画布宽度
   // const height = threeValue.value.clientHeight; //canvas画布高度
@@ -78,7 +78,7 @@ const init = () => {
   // const s = 600;//控制left, right, top, bottom范围大小
   // const camera = new THREE.OrthographicCamera(-s * k, s * k, s, -s, 1, 8000);
   // // 创建渲染器
- camera.position.set(50,100,100)
+  camera.position.set(50,100,100)
   const renderer = new THREE.WebGLRenderer({
     antialias:true,//锯齿状
     alpha: false //设置背景透明
@@ -88,16 +88,8 @@ const init = () => {
   //创建控制轨道
   const controls =  new OrbitControls(camera,renderer.domElement)
   controls.update()
-  controls.minDistance = 200;//透视相机的缩小
-  controls.maxDistance = 500;
-  //添加点光源
-//   const  pointLight =  new THREE.PointLight('pink');
-//   pointLight.position.set(10, 20, 10);
-// // // 改变点光源位置，使用OrbitControls辅助观察
-// //   pointLight.position.set(-400, -200, -300);
-//   const pointLightHelper = new THREE.PointLightHelper(pointLight, 10);
-//
-//   scene.add(pointLightHelper);
+
+
   const group1 = new THREE.Group(); //所有高层楼的父对象
   group1.name = "高层";
   for (let i = 0; i < 5; i++) {
@@ -143,11 +135,17 @@ const init = () => {
     console.log('所有模型节点的名称',obj.name,obj.isMesh);
     // obj.isMesh：if判断模型对象obj是不是网格模型'Mesh'
     if (obj.isMesh&&obj.name=='1号楼') {//判断条件也可以是obj.type === 'Mesh'
-       console.log(obj.geometry.attributes.uv)
+      console.log(obj.geometry.attributes.uv)
       obj.material.color.set(0xffff00);
 
     }
   });
+  ///创建拾取器
+
+  const raycaster = new THREE.Raycaster();
+
+
+
   //添加平行光源
 
   const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
@@ -173,12 +171,7 @@ const init = () => {
     renderer.render(scene, camera); //执行渲染操作
     requestAnimationFrame(render); //请求再次执行渲染函数render，渲染下一帧
   }
-  const box3 = new THREE.Box3();
-  box3.expandByObject(model); // 计算模型包围盒
-  const center = new THREE.Vector3()
-  box3.getCenter(center)
-  console.log('查看包围盒',box3,center);
-  camera.up.set(1,-1,0) //相机颠倒
+
   camera.lookAt(0,0,0);
 
   render();

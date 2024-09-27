@@ -177,3 +177,177 @@ texture.repeat.set(12,12);//注意选择合适的阵列数量
 
 相机的指向位置。
 camera.lookAt(0, 0, 0); 
+
+**纹理.encoding和渲染器**
+为了正常的渲染一般 颜色贴图的.encoding 属性和渲染器的,outputEncoding属性保持一致。
+```js
+  const texture = new THREE.TextureLoader().load('./earth.jpg');
+texture.colorSpace = THREE.LinearEncoding;//默认值
+
+
+
+//解决加载gltf格式模型颜色偏差问题
+renderer.outputColorSpace = THREE.sRGBEncoding;
+
+```
+**模型加载添加或者更换贴图**
+```js
+const texLoader = new THREE.TextureLoader();
+const texture = texLoader.load('./黑色.png');// 加载手机mesh另一个颜色贴图
+texture.encoding = THREE.sRGBEncoding; //和渲染器.outputEncoding一样值
+loader.load("../手机模型.glb", function (gltf) {
+    const mesh = gltf.scene.children[0]; //获取Mesh
+    mesh.material.map = texture; //更换不同风格的颜色贴图
+})
+
+如上如果直接给模型加载贴图的话 会发现贴图是反的,这是应为贴图texture 中的存在flipy属性默认是true
+表示的是贴图翻转,此时我们就得将这个属性设置为false
+
+texture.flipY =  false
+```
+**PBR材质**
+所谓的pbr就是物理模型 这种模型对于光照的反射更加的贴近真实物体所处的环境。
+常见的材质有MeshStanderMaterial和MeshPhysicalMaterial两种材质。
+
+pbr材质的金属度
+```js
+const mest = new THREE.MeshStandardMaterial({
+    metalness: 1.0,//金属度属性
+    roughness:0.5//粗糙度
+})
+通过 metalness 属性设置金属度 此值在0~1之间 1代表的是金属
+通过 roughness 属性表示物体表单的粗糙度 此值在0~1 之间 1 表示镜子。
+```
+pbr材质的环境贴图
+
+pbr材质因为是高度模仿显示生活 在使用的时候需要添加一个环境贴图,这个贴图则是立体的贴图
+通过CubeTextureLoader贴图加载器。
+```js
+const textureCube = new THREE.CubeTextureLoader()
+    .setPath('./环境贴图/环境贴图0/') //这是图片的前缀地址。
+    .load(['px.jpg', 'nx.jpg', 'py.jpg', 'ny.jpg', 'pz.jpg', 'nz.jpg']);
+    // CubeTexture表示立方体纹理对象，父类是纹理对象Texture 
+new THREE.MeshStandardMaterial({
+    metalness: 1.0,
+    roughness: 0.5,
+    envMap: textureCube, //设置pbr材质环境贴图
+})
+```
+**渲染器**
+```js
+ renderer.setClearAlpha(0.8);//设置背景透明度 0-1 
+const renderer = new THREE.WebGLRenderer({
+    antialias:true,//锯齿状
+    alpha: false ,//设置背景透明
+    preserveDrawingBuffer:true,//将图片可以帮存下来
+})
+
+renderer.setClearColor(0xb9d3ff, 0.4); //设置背景颜色和透明度
+
+
+
+```
+```js
+//将图片保存下来
+
+document.getElementById('download').addEventListener('click',function(){
+    // 创建一个超链接元素，用来下载保存数据的文件
+    const link = document.createElement('a');
+    // 通过超链接herf属性，设置要保存到文件中的数据
+    const canvas =  render.domElement
+    link.href = canvas.toDataURL('image/png');
+    link.download = 'threejs.png'; //下载文件名
+    link.click(); //js代码触发超链接元素a的鼠标点击事件，开始下载文件到本地
+})
+
+
+```
+**深度冲突**
+实际的开发过程中会遇到模型闪烁的问题,这个问题产生的原因就是模型的深度冲突。
+解决方法 我们一般设置渲染器的对数深度缓冲区
+```js
+const renderer = new THREE.WebGLRenderer({
+    // 设置对数深度缓冲区，优化深度冲突问题
+    logarithmicDepthBuffer: true
+});
+同时设置mesh 的位置
+mesh.position.z=0.1
+```
+**模型加载的进度条**
+```js
+loader.load("../工厂.glb", function (gltf) {
+    model.add(gltf.scene);
+    //加载完成后进度条消失。
+    document.getElementById("container").style.display = 'none';
+}, function (xhr) {
+    // 控制台查看加载进度xhr
+    // 通过加载进度xhr可以控制前端进度条进度   
+    const percent = xhr.loaded / xhr.total;
+    console.log('加载进度' + percent);
+})
+
+```
+**相机**
+1.正投影相机
+```js
+ const width = threeValue.value.clientWidth; //canvas画布宽度
+const height = threeValue.value.clientHeight; //canvas画布高度
+const k = width / height; //canvas画布宽高比
+const s = 600;//控制left, right, top, bottom范围大小
+const camera = new THREE.OrthographicCamera(-s * k, s * k, s, -s, 1, 8000);
+参数分别是渲染空间的左边界,右边界,上边界,下边界,近界面,远截面。
+
+```
+2.透视相机
+```js
+const width = threeValue.value.clientWidth; //canvas画布宽度
+const height = threeValue.value.clientHeight;
+const camera =  new THREE.PerspectiveCamera(75,width/height,0,1,1000)
+参数分别是 可视角度  长宽比 近截面 远截面
+```
+camera.up.set(0,-1,0) 可以设置相机的状态 类比于我们拍照手机的横屏和竖屏等。
+注意如果camera.up后得通过  camera.lookAt(0,0,0); 重新设置相机姿态。
+这两种的使用场景 对于模拟人眼的场景用的都是透视相机，对于只是查看的场景 用的是正交 比如查看全中国的地图，2d可视化
+
+**包围盒**
+
+包围盒是包围模型所有顶点的最小的盒子。
+
+**透视相机OribitControls相机轨道**
+
+常用的属性：
+```js
+controls.enblePan =false //禁用右键拖拽
+control.enableZoom =  false//禁用滚轮缩放
+control.enableRotate =  false // 禁用左键旋转
+controls.target.set(x, y, z);//controls.target 的坐标务必和相机的lookAt()对应的坐标保持一致。
+因为内部仍然执行的是相机的lookAt()
+controls.maxDistance = 500;//相机位置与观察目标点最大值
+controls.minDistance = 200;//相机位置与观察目标点最小值
+```
+**地图相机空间MapControls**
+**精灵材质**
+
+精灵材质模型 不需要我们创建物体
+```js
+const texture = new THREE.TextureLoader().load("./光点.png");
+const spriteMaterial = new THREE.SpriteMaterial({
+  color:0x00ffff,//设置颜色
+    rotation:Math.PI/4 //设置惊醒材质的旋转角度
+    map:texture//通过map 可以设置贴图
+    
+    
+});
+// 创建精灵模型对象，不需要几何体geometry参数
+const sprite = new THREE.Sprite(spriteMaterial);
+sprite.scale.set(12,23)//可以设置默认矩形的长宽
+
+
+
+scane.add(sprite);
+精灵材质默认的物体是平面的矩形和网格模型中de PlaneGeometry不同点在于精灵材质不会因为相机的旋转形状发生改变
+
+//可以用来生成星星
+```
+**Raycaster射线拾取器**
+
