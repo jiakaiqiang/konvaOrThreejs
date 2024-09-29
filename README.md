@@ -350,4 +350,221 @@ scane.add(sprite);
 //可以用来生成星星
 ```
 **Raycaster射线拾取器**
+一般我们常用的模型点击的时候获取对应点击的模型的时候就会使用到射线拾取模型
+ 首先创建射线拾取器
+```js
+  const raycaster = new THREE.Raycaster();
+```
+其次要创建射线的开始点和方向
+```js
+raycaster.ray.origin  =  new THREE.Vector3(100,0,0)
+raycaster.ray.direction = new THREE.Vector3(1,0,0)//方向的节点必须是单元节点1
+```
+接着就要进行交叉计算 通过intersectObjects()
+```js
+ const intersects =  new THREE.intersectObject(group.children,true)//参数是一个group 或者是[mesh,mesh,mesh]
+//intersects.lenght>0 的时候则表示是选中的模型  第二个参数表示的是 检查所有的孩子
+
+```
+注意射线拾取的时候，mesh1, mesh2, mesh3位置要确保更新的情况下，执行射线计算，threejs一般是渲染器执行一次.render()之后，你设置的mesh.position或者mesh父对象的position才会真实生效。
+```JS
+render()
+// 注意更新下模型的世界矩阵，你设置的mesh.position生效，再进行射线拾取计算
+model.updateMatrixWorld(true);
+const intersects = raycaster.intersectObjects([mesh1, mesh2, mesh3]);
+
+
+```
+**屏幕坐标转标准设备坐标**
+threejs标准坐标的范围是[-1,1] 因此对于屏幕的坐标而言x的范围是[0,offsetWidth]之间 那么x/offsetWidth 的范围就是[0,1] 然后我们给这个基础上乘2就变成了
+[0,2] 然后我们在这个基础上-1 就得到了[-1,1]的范围 因此 就有个公式
+```js
+x =  px/width *2 -1
+y =  py/height *2 -1
+```
+
+**通过raycaster进行模型拾取以及模型边框展示**
+
+通过鼠标的点击事件我们进行模型的拾取
+```js
+render.domElement.addEventListener('click',function(event){
+ const px = event.offsetX -  threeValue.value.getBoundingClientRect().left;
+ const py = event.offsetY -  threeValue.value.getBoundingClientRect().top;
+ //屏幕坐标px、py转标准设备坐标x、y
+ //width、height表示canvas画布宽高度
+ const x = (px / threeValue.value.clientWidth) * 2 - 1;
+ const y = -(py / threeValue.value.clientHeight) * 2 + 1;
+ const raycaster =  new THREE.Raycaster({
+  origin:new THREE.Vector3(100,0,0),//创建射线原点
+  direaction:new THREE.Vector3(1,0,0)//射线方向
+ })
+
+//通过点击点的位置生成射线然后进行模型的选中
+ raycaster.setFromCamera(new THREE.Vector2(x,y),camera)
+// raycaster.interspectObjects()中的参数分别是
+//1.是group 或者mesh的list  group.children必须是mesh list 参数2 表示的是递归便利所有的子模型.
+ const intersects =  raycaster.interspectObjects(model.children,true)
+ if(intersects.length>0){
+  intersects[0].object.material.set('red')
+ }
+//以上就是我们进行模型选择的过程并且根据选择的模型进行修改当前选中的模型颜色。
+
+})
+
+//接下来我们实现选中后显示选中模型的外轮廓
+
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
+import {RenderPass} from 'three/examples/jsm/postprocessing/RenderPass.js';
+
+const composer = new EffectComposer(renderer);
+const renderPass = new RenderPass(scene, camera);
+composer.addPass(renderPass);
+
+const outlinePass = new OutlinePass(new THREE.Vector2(threeValue.value.clientWidth, threeValue.value.clientHeight), scene, camera);
+outlinePass.visibleEdgeColor.set(0xff0000); // 可见边缘颜色
+outlinePass.hiddenEdgeColor.set(0xffffff); // 隐藏边缘颜色
+outlinePass.edgeStrength = 5; // 边缘强度
+outlinePass.edgeThickness = 1; // 边缘厚度
+composer.addPass(outlinePass);
+
+//然后在渲染函数中添加 composer.render()
+function render(){
+ renderer.render(scene, camera); //执行渲染操作
+ if (composer) {
+  composer.render();
+ }
+ requestAnimationFrame(render);
+}
+
+
+render.domElement.addEventListener('click',function(event){
+ const px = event.offsetX -  threeValue.value.getBoundingClientRect().left;
+ const py = event.offsetY -  threeValue.value.getBoundingClientRect().top;
+ //屏幕坐标px、py转标准设备坐标x、y
+ //width、height表示canvas画布宽高度
+ const x = (px / threeValue.value.clientWidth) * 2 - 1;
+ const y = -(py / threeValue.value.clientHeight) * 2 + 1;
+ const raycaster =  new THREE.Raycaster({
+  origin:new THREE.Vector3(100,0,0),//创建射线原点
+  direaction:new THREE.Vector3(1,0,0)//射线方向
+ })
+
+//通过点击点的位置生成射线然后进行模型的选中
+ raycaster.setFromCamera(new THREE.Vector2(x,y),camera)
+// raycaster.interspectObjects()中的参数分别是
+//1.是group 或者mesh的list  group.children必须是mesh list 参数2 表示的是递归便利所有的子模型.
+
+
+ for (let i = 0; i < model.children.length; i++) {
+  const group = model.children[i];
+  //递归遍历chooseObj，并给chooseObj的所有子孙后代设置一个ancestors属性指向自己
+  group.traverse(function (obj) {
+ 
+   if (obj.isMesh) {
+
+    obj.ancestors = obj; //我们选中的mesh
+   }
+  })
+ }
+ 
+ const intersects =  raycaster.interspectObjects(model.children,true)
+ if(intersects.length>0){
+  outlinePass.selectedObjects =[intersects[0].object.ancestors];
+ }
+
+
+})
+
+
+
+
+
+
+
+
+```
+**raycaster拾取精灵模型**
+```js
+const randomS =  ()=>{
+ const texture =  new THREE.TextureLoader().load('./sunpoint.png')
+ const spriteMaterial = new THREE.SpriteMaterial({
+  color:0x00ffff,//设置颜色
+  rotation:Math.PI/4,
+
+ });
+
+
+ list.forEach(item=>{
+  scene.remove(item)
+ })
+ for(let i=0;i<10;i++){
+  // 创建精灵模型对象，不需要几何体geometry参数
+  const sprite = new THREE.Sprite(spriteMaterial);
+  sprite.change = function(){
+  //复制材质并更换材质颜色
+   let spriteMaterials =  sprite.material.clone()
+   spriteMaterials.color.set(0xff0000)
+   sprite.material = spriteMaterials
+  }
+  sprite.scale.set(10,10)
+  list.push(sprite)
+  sprite.position.set(i*20*Math.random()+1,i*20*Math.random()+1,i*20*Math.random()+1)
+  scene.add(sprite)
+ }
+}
+
+renderer.domElement.addEventListener('click',function(event){
+ const  px =  event.offsetX - lights.value.getBoundingClientRect().left
+ const  py =  event.offsetY - lights.value.getBoundingClientRect().top
+ const  x =  (px/ lights.value.clientWidth)*2 -1
+ const  y =  -(py/ lights.value.clientHeight)*2 + 1
+ console.log(x,y)
+ //创建射线拾取
+ const raycaster =  new THREE.Raycaster()
+
+ //根据点击的xy 重新定义射线
+ raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
+ //检测射线是否与场景中的物体相交
+
+ const intersects =    raycaster.intersectObjects(scene.children,true);
+ console.log(intersects,'intersects')
+
+ if(intersects.length>0){
+  intersects[0].object.change()
+ }
+
+})
+
+```
+**场景标注**
+通过css2dObject这个库我们可以将世界坐标转换成我们canvas中的坐标。
+```js
+import { CSS2DRenderer,CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+//通过css2DObject(dom对象) 生成dom 元素
+  const tagObject = new CSS2DObject(tags.value);
+
+tagObject.position.set(-55,0,-55); //设置标签的位置一般和mesh.position.set()设置的坐标一直
+//添加到场景中。
+scene.add(tagObject)
+
+//然后创建渲染器 用来专门的渲染dom元素
+
+const css2Renderer = new CSS2DRenderer();
+css2Renderer.render(scene, camera);
+
+css2Renderer.setSize(threeValue.value.clientWidth, threeValue.value.clientHeight);
+
+css2Renderer.domElement.style.position = 'absolute';
+css2Renderer.domElement.style.top = '0px';
+css2Renderer.domElement.style['pointer-events']='none';
+css2Renderer.domElement.style.overflow = "auto";
+css2Renderer.domElement.style.color = 'red';
+css2Renderer.domElement.style.zIndex =2;
+
+
+threeValue.value.appendChild(css2Renderer.domElement);
+css2Renderer.render(scene, camera);
+
+```
 

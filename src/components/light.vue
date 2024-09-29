@@ -31,47 +31,42 @@ const init  = ()=>{
   const sprite = new THREE.Sprite(spriteMaterials);
   sprite.scale.set(1,1)
   sprite.position.set(5,5,5)
+
   scene.add(sprite)
 
 
 
   randomS()
 
-  const group = new THREE.Group();
-  for (let i = 0; i < 16000; i++) {
-    // 精灵模型共享材质
-    const sprite = new THREE.Sprite(spriteMaterials);
-    group.add(sprite);
-    sprite.scale.set(1, 1, 1);
-    // 设置精灵模型位置，在长方体空间上上随机分布
-    const x = 1000 * (Math.random() - 0.5);
-    const y = 600 * Math.random();
-    const z = 1000 * (Math.random() - 0.5);
-    sprite.position.set(x, y, z)
-  }
-  const clock = new THREE.Clock();
-  scene.add(group)
-  function loop() {
-    // loop()两次执行时间间隔
-    const t = clock.getDelta();
-    group.children.forEach(sprite => {
-      // 雨滴的y坐标每次减t*60
-      sprite.position.y -= t*60;
-      if (sprite.position.y < 0) {
-        sprite.position.y = 600;
-      }
-    });
-    requestAnimationFrame(loop);
-  }
-  loop();
+  // const group = new THREE.Group();
+  // for (let i = 0; i < 16000; i++) {
+  //   // 精灵模型共享材质
+  //   const sprite = new THREE.Sprite(spriteMaterials);
+  //   group.add(sprite);
+  //   sprite.scale.set(1, 1, 1);
+  //   // 设置精灵模型位置，在长方体空间上上随机分布
+  //   const x = 1000 * (Math.random() - 0.5);
+  //   const y = 600 * Math.random();
+  //   const z = 1000 * (Math.random() - 0.5);
+  //   sprite.position.set(x, y, z)
+  // }
+  // const clock = new THREE.Clock();
+  // scene.add(group)
+  // function loop() {
+  //   // loop()两次执行时间间隔
+  //   const t = clock.getDelta();
+  //   group.children.forEach(sprite => {
+  //     // 雨滴的y坐标每次减t*60
+  //     sprite.position.y -= t*60;
+  //     if (sprite.position.y < 0) {
+  //       sprite.position.y = 600;
+  //     }
+  //   });
+  //   requestAnimationFrame(loop);
+  // }
+  // loop();
 
 
-  const ray = new THREE.Ray()
-
-  ray.origin.set(1, 0, 3);
-  ray.direction = new THREE.Vector3(1,0,0);
-
-  scene.add(ray)
   mesh.castShadow = true;
   //创建相机
   const  camera =  new THREE.PerspectiveCamera(75,lights.value.clientWidth/lights.value.clientHeight,50,10000)
@@ -96,7 +91,34 @@ const init  = ()=>{
     renderer.render(scene, camera); //执行渲染操作
     requestAnimationFrame(render); //请求再次执行渲染函数render，渲染下一帧
   }
+  scene.updateMatrixWorld(true);
   render()
+  renderer.domElement.addEventListener('click',function(event){
+      const  px =  event.offsetX - lights.value.getBoundingClientRect().left
+      const  py =  event.offsetY - lights.value.getBoundingClientRect().top
+      const  x =  (px/ lights.value.clientWidth)*2 -1
+      const  y =  -(py/ lights.value.clientHeight)*2 + 1
+    console.log(x,y)
+    //创建射线拾取
+    const raycaster =  new THREE.Raycaster()
+
+    //根据点击的xy 重新定义射线
+    raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
+    //检测射线是否与场景中的物体相交
+
+    const intersects =    raycaster.intersectObjects(scene.children,true);
+     console.log(intersects,'intersects')
+
+    if(intersects.length>0){
+      intersects[0].object.change()
+    }
+
+  })
+
+
+
+
+
 }
 onMounted(() => {
   init()
@@ -105,19 +127,25 @@ const list  = []
 const randomS =  ()=>{
   const texture =  new THREE.TextureLoader().load('./sunpoint.png')
   const spriteMaterial = new THREE.SpriteMaterial({
-   // color:0x00ffff,//设置颜色
+    color:0x00ffff,//设置颜色
     rotation:Math.PI/4,
-    map:texture
+
   });
 
 
   list.forEach(item=>{
     scene.remove(item)
   })
-   for(let i=0;i<40;i++){
+   for(let i=0;i<10;i++){
      // 创建精灵模型对象，不需要几何体geometry参数
      const sprite = new THREE.Sprite(spriteMaterial);
-     sprite.scale.set(1,1)
+     sprite.change = function(){
+
+       let spriteMaterials =  sprite.material.clone()
+       spriteMaterials.color.set(0xff0000)
+       sprite.material = spriteMaterials
+     }
+     sprite.scale.set(10,10)
      list.push(sprite)
      sprite.position.set(i*20*Math.random()+1,i*20*Math.random()+1,i*20*Math.random()+1)
      scene.add(sprite)

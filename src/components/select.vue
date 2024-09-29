@@ -1,24 +1,33 @@
 <template>
   <div ref="threeValue" style="width: 90vw;height: 90vh">
-
+    <div ref="tags" style="height:100px;width: 100px;color:'red';top:0">
+      sfsfsfs
+    </div>
   </div>
 </template>
 <script setup>
-import {onMounted,ref} from 'vue'
+import {onMounted,ref,reactive} from 'vue'
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import * as THREE from 'three'
 import Stats from 'three/addons/libs/stats.module.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 const stats =  new Stats() //添加帧数
 const threeValue =  ref(null)
-// 创建场景
+const tags = ref(null)
+import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
+import {RenderPass} from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { CSS2DRenderer,CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 const scene = new THREE.Scene()
 const init = () => {
-  console.log(threeValue.value.clientWidth,threeValue.value.clientHeight)
-  //创建物体
+
+
   // const geometry = new THREE.BoxGeometry(10, 10, 10) //长方形
 
   //自定义物体形状
+  const tagObject = new CSS2DObject(tags.value);
 
+  tagObject.position.set(-55,0,-55);
+  scene.add(tagObject)
 
   const geometry = new THREE.BufferGeometry();
   const attribute =  new THREE.BufferAttribute(new Float32Array([ 0, 0, 0, //顶点1坐标
@@ -79,6 +88,23 @@ const init = () => {
   // const camera = new THREE.OrthographicCamera(-s * k, s * k, s, -s, 1, 8000);
   // // 创建渲染器
   camera.position.set(50,100,100)
+
+  const css2Renderer = new CSS2DRenderer();
+  css2Renderer.render(scene, camera);
+
+  css2Renderer.setSize(threeValue.value.clientWidth, threeValue.value.clientHeight);
+
+  css2Renderer.domElement.style.position = 'absolute';
+  css2Renderer.domElement.style.top = '0px';
+  css2Renderer.domElement.style['pointer-events']='none';
+  css2Renderer.domElement.style.overflow = "auto";
+  css2Renderer.domElement.style.color = 'red';
+  css2Renderer.domElement.style.zIndex =2;
+
+
+  threeValue.value.appendChild(css2Renderer.domElement);
+  css2Renderer.render(scene, camera);
+
   const renderer = new THREE.WebGLRenderer({
     antialias:true,//锯齿状
     alpha: false //设置背景透明
@@ -131,22 +157,19 @@ const init = () => {
   model.add(group1, group2);
   model.position.set(-50,0,-25);
   scene.add(model);
+
   model.traverse(function(obj) {
     console.log('所有模型节点的名称',obj.name,obj.isMesh);
     // obj.isMesh：if判断模型对象obj是不是网格模型'Mesh'
     if (obj.isMesh&&obj.name=='1号楼') {//判断条件也可以是obj.type === 'Mesh'
-      console.log(obj.geometry.attributes.uv)
+
+
       obj.material.color.set(0xffff00);
 
     }
+
   });
-  ///创建拾取器
 
-  const raycaster = new THREE.Raycaster();
-
-
-
-  //添加平行光源
 
   const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
 // 设置光源的方向：通过光源position属性和目标指向对象的position属性计算
@@ -159,7 +182,7 @@ const init = () => {
   scene.add(dirLightHelper);
 
   //创建帧渲染
-  threeValue.value.appendChild(stats.domElement)
+  // threeValue.value.appendChild(stats.domElement)
   // 渲染
   renderer.render(scene, camera)
 
@@ -169,12 +192,26 @@ const init = () => {
 
     stats.update();
     renderer.render(scene, camera); //执行渲染操作
+    if (composer) {
+      composer.render();
+    }
     requestAnimationFrame(render); //请求再次执行渲染函数render，渲染下一帧
   }
 
   camera.lookAt(0,0,0);
+  const composer = new EffectComposer(renderer);
+  const renderPass = new RenderPass(scene, camera);
+  composer.addPass(renderPass);
 
+  const outlinePass = new OutlinePass(new THREE.Vector2(threeValue.value.clientWidth, threeValue.value.clientHeight), scene, camera);
+  outlinePass.visibleEdgeColor.set(0xff0000); // 可见边缘颜色
+  outlinePass.hiddenEdgeColor.set(0xffffff); // 隐藏边缘颜色
+  outlinePass.edgeStrength = 5; // 边缘强度
+  outlinePass.edgeThickness = 1; // 边缘厚度
+  composer.addPass(outlinePass);
   render();
+  // 创建场景
+  model.updateMatrixWorld(true);
   //窗体改变的时候 渲染改变
   window.onresize=function(){
     console.log(threeValue.value.clientWidth)
@@ -185,6 +222,66 @@ const init = () => {
     camera.updateProjectionMatrix();
 
   }
+  const axesHelper = new THREE.AxesHelper(100)
+
+  scene.add(axesHelper);
+
+  // 屏幕坐标转标准设备坐标
+  renderer.domElement.addEventListener('click',function(event){
+    // left、top表示canvas画布布局，距离顶部和左侧的距离(px)
+    const px = event.offsetX -  threeValue.value.getBoundingClientRect().left;
+    const py = event.offsetY -  threeValue.value.getBoundingClientRect().top;
+    //屏幕坐标px、py转标准设备坐标x、y
+    //width、height表示canvas画布宽高度
+    const x = (px / threeValue.value.clientWidth) * 2 - 1;
+    const y = -(py / threeValue.value.clientHeight) * 2 + 1;
+    const raycaster = new THREE.Raycaster();
+    raycaster.ray.origin = new THREE.Vector3(-100, 0, 0);
+// 设置射线方向射线方向沿着x轴
+    raycaster.ray.direction = new THREE.Vector3(1, 1, 0);
+    //.setFromCamera()计算射线投射器`Raycaster`的射线属性.ray
+    // 形象点说就是在点击位置创建一条射线，射线穿过的模型代表选中
+    raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
+
+
+
+    for (let i = 0; i < model.children.length; i++) {
+      const group = model.children[i];
+      //递归遍历chooseObj，并给chooseObj的所有子孙后代设置一个ancestors属性指向自己
+      group.traverse(function (obj) {
+        console.log(obj)
+        if (obj.isMesh) {
+
+          obj.ancestors = obj;
+        }
+      })
+    }
+
+    const intersects =    raycaster.intersectObjects(model.children,true);
+    console.log("射线器返回的对象", intersects);
+    // intersects.length大于0说明，说明选中了模型
+    if (intersects.length > 0) {
+
+
+
+
+
+
+      // 选中模型的第一个模型，设置为红色
+      model.traverse(function(obj) {
+
+        if (obj.isMesh) {//判断条件也可  console.log(obj.geometry.attributes.uv)
+          obj.name=='1号楼'&&obj.material.color.set(0xffff00);
+          obj.name!='1号楼'&&obj.material.color.set(0x00ffff);
+        }
+      });
+
+      outlinePass.selectedObjects =[intersects[0].object.ancestors];
+        intersects[0].object.material.color.set(0xff0000);
+
+
+    }
+  })
 }
 
 onMounted(() => {
