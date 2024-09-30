@@ -5,6 +5,7 @@ const router = createRouter({
     routes: [
         {path: '/', component: () => import('../components/three.vue')},
         {path:'/select',component:()=>import('../components/select.vue')},
+        {path:'/testbz',component:()=>import('../components/标注.vue')},
         {path:"/lights", component: () => import('../components/light.vue')},
         {path: '/konvaSelect', component: () => import('../components/konvaSelect.vue')},
         {path: '/konvaCanvas', component: () => import('../components/konvaCanvas.vue')},

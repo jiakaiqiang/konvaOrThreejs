@@ -567,4 +567,9 @@ threeValue.value.appendChild(css2Renderer.domElement);
 css2Renderer.render(scene, camera);
 
 ```
+在我们通过鼠标的方式去选中某些模型 并且在对应的模型上添加标注的时候 点击后得重新渲染。
+css2Renderer.render()
+
+**动画库tween.js**
+
 

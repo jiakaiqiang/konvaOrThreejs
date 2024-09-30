@@ -1,8 +1,9 @@
 <template>
   <div ref="threeValue" style="width: 90vw;height: 90vh">
-    <div ref="tags" style="height:100px;width: 100px;color:'red';top:0">
-      sfsfsfs
-    </div>
+
+  </div>
+  <div ref="tags" style="height:100px;width: 100px;color:'pink';top:0;z-index:2;display: none">
+    sfsfsfs
   </div>
 </template>
 <script setup>
@@ -26,8 +27,8 @@ const init = () => {
   //自定义物体形状
   const tagObject = new CSS2DObject(tags.value);
 
-  tagObject.position.set(-55,0,-55);
-  scene.add(tagObject)
+
+
 
   const geometry = new THREE.BufferGeometry();
   const attribute =  new THREE.BufferAttribute(new Float32Array([ 0, 0, 0, //顶点1坐标
@@ -97,10 +98,7 @@ const init = () => {
   css2Renderer.domElement.style.position = 'absolute';
   css2Renderer.domElement.style.top = '0px';
   css2Renderer.domElement.style['pointer-events']='none';
-  css2Renderer.domElement.style.overflow = "auto";
-  css2Renderer.domElement.style.color = 'red';
-  css2Renderer.domElement.style.zIndex =2;
-
+  css2Renderer.domElement.style.color= 'red';
 
   threeValue.value.appendChild(css2Renderer.domElement);
   css2Renderer.render(scene, camera);
@@ -277,6 +275,12 @@ const init = () => {
       });
 
       outlinePass.selectedObjects =[intersects[0].object.ancestors];
+      const worldPosition = new THREE.Vector3();
+        intersects[0].object.ancestors.getWorldPosition(worldPosition)
+      console.log(worldPosition,'----fwefwf')
+         tagObject.position.copy(worldPosition);
+
+        intersects[0].object.ancestors.add(tagObject);
         intersects[0].object.material.color.set(0xff0000);
 
 
