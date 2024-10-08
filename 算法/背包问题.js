@@ -27,6 +27,3 @@ function bagProblem(weight, value, bagWeight) {
     console.log(dp)
     return dp[weight.length - 1][bagWeight]
 }
-
-
-console.log(bagProblem(weight, value, bagWeight))
