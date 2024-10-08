@@ -572,4 +572,79 @@ css2Renderer.render()
 
 **动画库tween.js**
 
+使用tween.js 进行相机飞行 
+```js
+camera.position.set(202, 123, 125);
+new TWEEN.Tween(camera.position)
+.to({x: 202,y: 123,z: 50}, 3000)
+// tweenjs改变参数对象的过程中，.onUpdate方法会被重复调用执行
+.onUpdate(function(){
+  camera.lookAt(0, 0, 0);
+})
+.start()
+
+//然后再render函数中进行 Tween.update()操作
+```
+相机围绕着模型进行圆周运动
+```js
+  const R = 100; //相机圆周运动的半径
+new TWEEN.Tween({angle:0})
+        .to({angle: Math.PI*2}, 16000)
+        .onUpdate(function(obj){
+         camera.position.x = R * Math.cos(obj.angle);
+         camera.position.z = R * Math.sin(obj.angle);
+         camera.lookAt(0, 0, 0);
+        })
+        .start()
+``` 
+tween.js还支持了回调函数.onStart() onUpdate() onComplete()
+分别是：
+```js
+onStart() //动画开始执行触发
+onUpdate() //动画执行过程中,一直被调用执行
+onComplete()//动画正常执行完触发
+//.onUpdate(function(obj){})结构中，obj对应的是new TWEEN.Tween(pos)的参数对象pos。也就是new Tween({})中的参数对象。
+
+```
+利用tweenjs实现点击模型相机视图的更新
+```js
+const worldPosition =  new THREE.VECTOR3()
+mesh.getWorldPosition(worldPositon)// 获取mesh的世界坐标并且赋值给worldPostion 参数。
+     //利用动画点击对应的模型进行视图飞行。
+const pos2 = worldPosition.clone().addScalar(30);//向量的x、y、z坐标分别在pos基础上增加30
+new TWEEN.Tween(camera.position)
+        .to({
+         x: pos2.x,
+         y: pos2.y,
+         z: pos2.z,
+        }, 3000)
+        // tweenjs改变参数对象的过程中，.onUpdate方法会被重复调用执行
+        .onUpdate(function(obj){
+         //这里可以设置相机的位置朝向
+         camera.lookAt(0, 0, 0);
+        })
+        .start()
+TWEEN.update()
+
+```
+**缓慢动画**
+
+设置缓动动画可以使得动画更加的自然
+```js
+new TWEEN.Tween(camera.position)
+.to({x: 300,y: 300,z: 300}, 3000)
+.start()
+.easing(TWEEN.Easing.Sinusoidal.InOut)//进入和结束都设置缓动
+```
+缓慢动画的语法结构
+```js
+new TWEEN.Tween().easying(TWEEN.Easing.easying函数,easying类型)
+
+```
+![img_2.png](img_2.png)
+![img_3.png](img_3.png)
+**模型的淡入淡出**
+
+
+
 

@@ -8,6 +8,7 @@
 </template>
 <script setup>
 import {onMounted,ref,reactive} from 'vue'
+import * as TWEEN from '@tweenjs/tween.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import * as THREE from 'three'
 import Stats from 'three/addons/libs/stats.module.js';
@@ -19,6 +20,7 @@ import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
 import {RenderPass} from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { CSS2DRenderer,CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 const scene = new THREE.Scene()
+const cameraPosition =  ref({x: 202,y: 123,z: -350})
 const init = () => {
 
 
@@ -187,7 +189,7 @@ const init = () => {
   //renderer.setClearAlpha(0.8);//设置
   function render() {
     //requestAnimationFrame循环调用的函数中调用方法update(),来刷新时间
-
+    TWEEN.update()
     stats.update();
     renderer.render(scene, camera); //执行渲染操作
     if (composer) {
@@ -197,6 +199,15 @@ const init = () => {
   }
 
   camera.lookAt(0,0,0);
+  const R = 100; //相机圆周运动的半径
+  new TWEEN.Tween({angle:0})
+      .to({angle: Math.PI*2}, 16000)
+      .onUpdate(function(obj){
+        camera.position.x = R * Math.cos(obj.angle);
+        camera.position.z = R * Math.sin(obj.angle);
+        camera.lookAt(0, 0, 0);
+      })
+      .start()
   const composer = new EffectComposer(renderer);
   const renderPass = new RenderPass(scene, camera);
   composer.addPass(renderPass);
@@ -263,24 +274,42 @@ const init = () => {
 
 
 
-
-
       // 选中模型的第一个模型，设置为红色
       model.traverse(function(obj) {
 
         if (obj.isMesh) {//判断条件也可  console.log(obj.geometry.attributes.uv)
           obj.name=='1号楼'&&obj.material.color.set(0xffff00);
           obj.name!='1号楼'&&obj.material.color.set(0x00ffff);
+          new TWEEN.Tween({opacity:obj.opacity})
+              .to({
+                opacity:0.0
+              }, 3000)
+              .onStart(function(){
+                //动画开始：允许透明opacity属性才能生效
+                obj.transparent = true;
+              })
+              // tweenjs改变参数对象的过程中，.onUpdate方法会被重复调用执行
+              .onUpdate(function(data){
+                obj.opacity = 0;
+
+              })
+
+              .start()
+          TWEEN.update()
         }
       });
 
       outlinePass.selectedObjects =[intersects[0].object.ancestors];
       const worldPosition = new THREE.Vector3();
         intersects[0].object.ancestors.getWorldPosition(worldPosition)
-      console.log(worldPosition,'----fwefwf')
-         tagObject.position.copy(worldPosition);
 
-        intersects[0].object.ancestors.add(tagObject);
+         tagObject.position.copy(worldPosition);
+        //利用动画点击对应的模型进行视图飞行。
+      const pos2 = worldPosition.clone().addScalar(30);//向量的x、y、z坐标分别在pos基础上增加30
+
+
+
+      intersects[0].object.ancestors.add(tagObject);
         intersects[0].object.material.color.set(0xff0000);
 
 
