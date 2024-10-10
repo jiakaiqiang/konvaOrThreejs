@@ -12,7 +12,7 @@ onMounted(() => {
   init()
 })
 let starPosition = reactive({})
-const init = () => {
+const  init = () => {
   //创建容器
   const stage = new Konva.Stage({
     container: 'container',

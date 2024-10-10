@@ -60,20 +60,6 @@ import Konva from "konva";
     layer.draw();
   }
 
-  function endSelection() {
-    // 在这里处理选中项
-    // 假设我们简单地打印出与选区相交的矩形
-    var intersected = layer.find('.' + Konva.Util.getRandomColor().toHexString()); // 假设每个矩形都有独特的颜色
-    intersected.forEach(function (node) {
-      if (selectionRect.intersects(node)) {
-        console.log('Selected:', node.name()); // 假设每个矩形都有一个唯一的name属性
-      }
-    });
-
-    // 清除选区
-    selectionRect.remove();
-    selectionRect = null;
-  }
 
   var isSelecting = false;
   var startX, startY;
@@ -94,7 +80,7 @@ import Konva from "konva";
 
   stage.on('mouseup', function () {
     if (isSelecting) {
-     // endSelection();
+
       isSelecting = false;
     }
   });

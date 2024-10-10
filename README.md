@@ -644,7 +644,158 @@ new TWEEN.Tween().easying(TWEEN.Easing.easying函数,easying类型)
 ![img_2.png](img_2.png)
 ![img_3.png](img_3.png)
 **模型的淡入淡出**
+```js
+// 模型淡入
+material.transparent = true;//开启透明计算
+material.opacity = 0.0;//完全透明
+
+// new TWEEN.Tween(material)
+new TWEEN.Tween({opacity:material.opacity})
+.to({opacity:1.0}, 3000)
+.onUpdate(function(obj){
+    material.opacity = obj.opacity
+})
+.onComplete(function(){
+    //动画结束：关闭允许透明，恢复到模型原来状态
+    material.transparent = false;
+})
+.start();
+```
+**数学几何计算**
+***threejs坐标系和三角函数***
+在threejs中如果我们想实现弧度到度或者度到弧度我们可以使用threejs中的MathUtils工具类可以帮助我们快速的实现相互的转换
+```js
+  const angle = THREE.MathUtils.radToDeg(Math.PI); //弧度转度
+  
+  const tes = THREE.MathUtils.degToRad(30); //度转弧度
+
+```
+***三维向量Vector3***
+三维向量的加法通过addVectors(向量1,向量2)
+```js
+const A = new THREE.Vector3(30, 30, 0);// 人起点A
+// walk表示运动的位移量用向量
+const walk = new THREE.Vector3(100, 50, 0);
+const B = new THREE.Vector3();// 人运动结束点B
+// addVectors的含义就是参数中两个向量xyz三个分量分别相加
+B.addVectors(A,walk);
+console.log('B',B);
+```
+此外向量的加法还可以通过add()方法进行实现
+```js
+
+const A = new THREE.Vector3(30, 30, 0);// 人起点A
+// walk表示运动的位移量用向量
+const walk = new THREE.Vector3(100, 50, 0);
+const  b =  a.add(walk)
+如果不想改变a的值也可以通过clone()的方式去实现
+const b =  a.clone().add(walk)
+
+```
+向量的复制可以通过.copy()
+```js
+const a =  new THREE.Vector3()
+mesh.position.cop(a)
+//将网格材质模型的坐标复制到a属性中。
+```
+multiplyScalar表示向量想，x,y,z 方向上的乘积
+```js
+const a =  new THREE.Vector3(10,10,10)
+const b =  a.clone().multiplyScalar(2)
+console.log(b) (20,20,20)
+
+```
+三维场景中两点中间的距离
+```js
+
+const A = new THREE.Vector3(30, 30, 0);// 人起点A
+const B = new THREE.Vector3(130,80,0);// 人运动结束点B
+// 3D空间，A和B两点之间的距离
+const L = Math.sqrt(Math.pow(B.x-A.x,2) + Math.pow(B.y-A.y,2) + Math.pow(B.z-A.z,2));
+```
+向量的减法运算 用.subVectors() 该方法进行 和加法addVectors() 用法类似,同理.sub() 和.add 的方法类似。
+```js
+
+const A = new THREE.Vector3(30, 30, 0);
+const B = new THREE.Vector3(130,80,0);
+const AB = new THREE.Vector3();
+AB.subVectors(B,A);
+```
+向量的长度用.length表示。
+**向量归一化**
+向量归一化.normalize() 就是等比例的缩放向量的xyz使得向量的长度为1 并且一般用归一化表示向量的方向。
+```js
+const dir = new THREE.Vector3(1, 1, 0);
+dir.normalize(); //向量归一化
+//Vector3(√2/2, √2/2, 0)   Vector3(0.707, 0.707, 0)
+console.log('dir',dir);
+```
+**.translateOnAxis()移动**
+模型可以根据向量的方向进行移动
+```js
+//模型沿着AB方向移动100个距离。
+mesh.translateOnAxis(AB,100)
+```
+camera.getWorldDirection()获取相机视线方向
+
+**生成箭头辅助线**
+
+箭头辅助线函数 ArrowHelper(方向,长度,指向的目标模型)
+我们在计算的时候可以通过箭头辅助线的方式查看向量方向和计算值
+```js
+//生成可视化的小球。
+const A =  new THREE.Vector3(0,3,0)
+const B =  new THREE.Vector3(8,0,0)
+const meshA =  createMesh(0x00ff00,1)
+meshA.position.copy(A)
+
+const meshB = createMesh(0x00ff00,1)
+meshB.position.copy(B)
+function createMesh(color,r){
+ const box =  new THREE.CircleGeometry(r)
+ const  material = new THREE.MeshBasicMaterial({color})
+ const mesh =  new THREE.Mesh(box,material)
+ return mesh
 
 
+
+}
+const group = new THREE.Group()
+group.add(meshA,meshB)
+scene.add(group)
+//生成箭头
+const AB =  B.clone().sub(A)
+const L =  AB.length()
+//生成向量的方向
+const dir =  AB.clone().normalize()
+//生成箭头
+const arrowHelper =  new THREE.ArrowHelper(dir,A,L)
+group.add(arrowHelper)
+
+```
+**第一三人称漫游**
+我們可以通过时间和速度的方式算出位置 然后更新模型的位置
+```JS
+document.addEventListener('keydown', (event) => {
+  if(event.keyCode==87){
+    keywordMap.keyW = true
+  }
+  console.log(event,keywordMap.keyW,'-wefwefwef')
+});
+const  clock =  new THREE.Clock()
+const v =  new THREE.Vector3(0,0,3)
+// 循环渲染
+function render() {
+ if(keywordMap.keyW){
+  let datetime =  clock.getDelta()
+  const depo =v.clone().multiplyScalar(datetime)
+  group.position.add(depo)
+ }
+ requestAnimationFrame(animate)
+ renderer.render(scene, camera)
+ TWEEN.update();
+}
+render()
+```
 
 

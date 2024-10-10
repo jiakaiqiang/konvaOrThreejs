@@ -4,6 +4,7 @@ const router = createRouter({
     history: createWebHashHistory(),
     routes: [
         {path: '/', component: () => import('../components/three.vue')},
+        {path: '/other', component: () => import('../components/other.vue')},
         {path:'/select',component:()=>import('../components/select.vue')},
         {path:'/testbz',component:()=>import('../components/标注.vue')},
         {path:"/lights", component: () => import('../components/light.vue')},
