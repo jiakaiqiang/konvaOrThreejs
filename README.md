@@ -787,7 +787,9 @@ const v =  new THREE.Vector3(0,0,3)
 // 循环渲染
 function render() {
  if(keywordMap.keyW){
+     //获取时间
   let datetime =  clock.getDelta()
+  //速度乘时间等于点的距离
   const depo =v.clone().multiplyScalar(datetime)
   group.position.add(depo)
  }
@@ -797,5 +799,34 @@ function render() {
 }
 render()
 ```
+如果我们想控制一直按键加速的话可以如下实现
+```js
+document.addEventListener('keydown', (event) => {
+  if(event.keyCode==87){
+    keywordMap.keyW = true
+  }
+  console.log(event,keywordMap.keyW,'-wefwefwef')
+});
+const  clock =  new THREE.Clock()
+const v =  new THREE.Vector3(0,0,3) //初始速度
+// 循环渲染
+function render() {
+ if(keywordMap.keyW){
+     //获取时间
+  let datetime =  clock.getDelta()
+  //先假定方向
+  const front = new THREE.Vector3(0,0,1);
+  v.add(front.multiplyScalar(a * deltaTime));
+  //速度乘时间等于点的距离
+  const depo =v.clone().multiplyScalar(datetime)
+  group.position.add(depo)
+ }
+ requestAnimationFrame(animate)
+ renderer.render(scene, camera)
+ TWEEN.update();
+}
+render()
+```
+**设置阻尼效果**
 
 
