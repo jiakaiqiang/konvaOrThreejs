@@ -829,4 +829,46 @@ render()
 ```
 **设置阻尼效果**
 
+其实所谓的阻尼效果就是我们不进行键盘的控制事件 后由系统自动的实现物体的停止
+代码如下
+```js
+// 用三维向量表示玩家角色(人)运动漫游速度
+const v = new THREE.Vector3(0, 0, 0);//初始速度设置为0
+const a = 12;//WASD按键的加速度：调节按键加速快慢
+const damping = -0.1;//阻尼 当没有WASD加速的时候，人、车等玩家角色慢慢减速停下来
+// 渲染循环
+const clock = new THREE.Clock();
+
+function render() {
+ const deltaTime = clock.getDelta();
+ if (keywordMap.keyW) {    // 这里通过键盘的按下和谈起的状态去控制速度的大小
+  //先假设W键对应运动方向为z
+  const front = new THREE.Vector3(0, 0, 1);
+  if (v.length() <4) {//限制最高速度
+   // W键按下时候，速度随着时间增加
+   v.add(front.multiplyScalar(a * deltaTime));
+  }
+ }
+
+ // 阻尼减速
+ v.addScaledVector(v, damping); // v乘damping的这个变量 再和v 相加再复制给a
+ console.log(v)
+ //更新玩家角色的位置  当v是0的时候，位置更新也不会变化
+ const deltaPos = v.clone().multiplyScalar(deltaTime);
+ group.position.add(deltaPos);
+
+
+ renderer.render(scene, camera);
+ requestAnimationFrame(render);
+ TWEEN.update()
+}
+
+render();
+
+
+```
+**相机跟着玩家走**
+
+相机跟着玩家走的思路在于,我们不通过轨道控制器去修改相机的位置。而是将相机和玩家作为一个整体添加到一个group中添加到组中 实现了相机跟随的效果。  相机的far角度会影响视角查看的范围大小。
+
 
