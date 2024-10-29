@@ -2,14 +2,63 @@
 import {onMounted,ref,reactive} from "vue";
 import TWEEN from '@tweenjs/tween.js';
 import * as THREE  from 'three'
-import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
+import { OctreeHelper } from 'three/examples/jsm/helpers/OctreeHelper.js';
+import { Octree } from 'three/examples/jsm/math/Octree.js';
+
+// 引入cannon-es
+import * as CANNON from 'cannon-es';
 const threeValue = ref(null)
 //创建场景
 const scene = new THREE.Scene()
+
 const  keywordMap =  reactive({
-  keyW:false
+  keyW:false,
+  keyS:false,
+  keyA:false,
+  keyD:false
 })
+const  group = new THREE.Group()
+
 const init=()=> {
+
+  const world = new CANNON.World();
+// 设置物理世界重力加速度
+// world.gravity.set(0, -9.8, 0);
+  world.gravity.set(0, -50, 0);
+
+  const sphereMaterial = new CANNON.Material()
+// 物理小球：对应threejs的网格小球
+  const body = new CANNON.Body({
+    mass: 0.3,//碰撞体质量
+    material: sphereMaterial,//碰撞体材质
+    shape: new CANNON.Sphere(1.5)
+  });
+
+  body.position.y = 100;
+  world.addBody(body);
+
+// 物理地面
+  const groundMaterial = new CANNON.Material()
+  const groundBody = new CANNON.Body({
+    mass: 0, // 质量为0，始终保持静止，不会受到力碰撞或加速度影响
+    shape: new CANNON.Plane(),
+    material: groundMaterial,
+  });
+// 改变平面默认的方向，法线默认沿着z轴，旋转到平面向上朝着y方向
+  groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);//旋转规律类似threejs 平面
+  world.addBody(groundBody);
+
+// 设置地面材质和小球材质之间的碰撞反弹恢复系数
+  const contactMaterial = new CANNON.ContactMaterial(groundMaterial, sphereMaterial, {
+    restitution: 0.7, //反弹恢复系数
+  })
+// 把关联的材质添加到物理世界中
+  world.addContactMaterial(contactMaterial)
+
+
+
+
   // 创建物体
   const geometry = new THREE.BoxGeometry(1, 1, 1)
 
@@ -18,12 +67,15 @@ const init=()=> {
 
   //创建网格模型
   const mesh = new THREE.Mesh(geometry, material)
-
+  const worldOctree = new Octree();
+// 分割模型，生成八叉树节点
+  worldOctree.fromGraphNode(mesh);
   //添加网格模型到场景中
   scene.add(mesh)
-
+  const helper = new OctreeHelper( worldOctree );
+  scene.add( helper );
   // 创建相机
-  const camera = new THREE.PerspectiveCamera(75, threeValue.value.clientWidth / threeValue.value.clientHeight, 0.1, 1000)
+  const camera= new THREE.PerspectiveCamera(75, threeValue.value.clientWidth / threeValue.value.clientHeight, 0.1, 1000)
   camera.position.set(10, 10, 10);
   camera.lookAt(0, 0, 0);
 
@@ -45,7 +97,7 @@ const init=()=> {
 
   }
 
-  const group = new THREE.Group()
+
   group.add(meshA, meshB)
   scene.add(group)
   //生成箭头
@@ -103,12 +155,44 @@ const init=()=> {
       }
     }
 
+    if(keywordMap.keyS){
+      const back = new THREE.Vector3(0, 0, -1);
+      if (v.length() <4) {//限制最高速度
+        // W键按下时候，速度随着时间增加
+        v.add(back.multiplyScalar(a * deltaTime));
+      }
+    }
+
+    if(keywordMap.keyA){
+      //定义绕着y轴旋转
+      const front = new THREE.Vector3();
+      //获取相机的方向
+      group.getWorldDirection(front);
+      const up = new THREE.Vector3(0, 1, 0);//y方向
+
+      const left = up.clone().cross(front);
+      v.add(left.multiplyScalar(a * deltaTime));
+    }
+    if(keywordMap.keyD){
+      const front = new THREE.Vector3();
+      group.getWorldDirection(front);
+      const up = new THREE.Vector3(0, 1, 0);//y方向
+      //叉乘获得垂直于向量up和front的向量 左右与叉乘顺序有关,可以用右手螺旋定则判断，也可以代码测试结合3D场景观察验证
+      const right = front.clone().cross(up);
+      v.add(right.multiplyScalar(a * deltaTime));
+    }
+
+
+    world.step(1/60);//更新物理计算
+    mesh.position.copy(body.position);// 网格小球与物理小球位置同步
     // 阻尼减速
     v.addScaledVector(v, damping); // v乘damping的这个变量 再和v 相加再复制给a
-    console.log(v)
+
     //更新玩家角色的位置  当v是0的时候，位置更新也不会变化
     const deltaPos = v.clone().multiplyScalar(deltaTime);
     group.position.add(deltaPos);
+    //作为子元素然后实现目标跟随的状态
+    group.add(camera)
 
 
     renderer.render(scene, camera);
@@ -117,21 +201,45 @@ const init=()=> {
   }
 
   render();
+  // document.addEventListener('mousemove',function(event){
+  //   group.rotation.y -= event.movementX / 600;
+  //   camera.rotation.x -= event.movementY / 600;
+  // })
 }
 onMounted(()=>{
   init()
 })
+
 document.addEventListener('keydown', (event) => {
+  console.log(event.keyCode,'wewe')
   if(event.keyCode==87){
     keywordMap.keyW = true
   }
-  console.log(event,keywordMap.keyW,'-wefwefwef')
+  if(event.keyCode==83){
+    keywordMap.keyS= true
+  }
+  if(event.keyCode==65){
+    keywordMap.keyA=true
+  }
+  if(event.keyCode==68){
+    keywordMap.keyD=true
+  }
+
 });
 document.addEventListener('keyup', (event) => {
   if(event.keyCode==87){
     keywordMap.keyW = false
   }
-  console.log(event,keywordMap.keyW,'-wefwefwef')
+  if(event.keyCode==83){
+    keywordMap.keyS= false
+  }
+  if(event.keyCode==65){
+    keywordMap.keyA=false
+  }
+  if(event.keyCode==68){
+    keywordMap.keyD=false
+  }
+
 });
 </script>
 

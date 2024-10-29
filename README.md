@@ -871,4 +871,36 @@ render();
 
 相机跟着玩家走的思路在于,我们不通过轨道控制器去修改相机的位置。而是将相机和玩家作为一个整体添加到一个group中添加到组中 实现了相机跟随的效果。  相机的far角度会影响视角查看的范围大小。
 
+**物品左右移动**
+```js
+首先物品左右移动的话我们通过鼠标的移动控制物品的渲染角度 同时控制相机的旋转角度 实现物品的移动, 但是发现物品在移动的时候 只能上下左右移动 斜着走
+这是因为我们固定了物品的移动方向  我们可以通过group.getWorldDirection()来获取物品的方向向量  从而控制物品的移动
+物品左右方向的移动的话我们可以通过向量的叉乘来实现。  两个向量叉乘的结果就是垂直于两个向量的向量 用右手手定则来理解,比如 
+v =  up.clone().cross(font) v 方向则是用右手 四根手指的方向是up 手指握住的方向是font 大拇指的方向则是v的方向。
 
+
+
+    if(keywordMap.keyA){
+     //定义绕着y轴旋转
+     const front = new THREE.Vector3();
+     //获取相机的方向
+     group.getWorldDirection(front);
+     const up = new THREE.Vector3(0, 1, 0);//y方向
+
+     const left = up.clone().cross(front);
+     v.add(left.multiplyScalar(a * deltaTime));
+    }
+if(keywordMap.keyD){
+ const front = new THREE.Vector3();
+ group.getWorldDirection(front);
+ const up = new THREE.Vector3(0, 1, 0);//y方向
+ //叉乘获得垂直于向量up和front的向量 左右与叉乘顺序有关,可以用右手螺旋定则判断，也可以代码测试结合3D场景观察验证
+ const right = front.clone().cross(up);
+ v.add(right.multiplyScalar(a * deltaTime));
+}
+
+
+
+
+
+```
