@@ -5,6 +5,7 @@ import * as THREE  from 'three'
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
 import { OctreeHelper } from 'three/examples/jsm/helpers/OctreeHelper.js';
 import { Octree } from 'three/examples/jsm/math/Octree.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
 // 引入cannon-es
 import * as CANNON from 'cannon-es';
@@ -79,14 +80,14 @@ const init=()=> {
   camera.position.set(10, 10, 10);
   camera.lookAt(0, 0, 0);
 
-  //生成可视化的小球。
-  const A = new THREE.Vector3(0, 3, 0)
-  const B = new THREE.Vector3(8, 0, 0)
-  const meshA = createMesh(0x00ff00, 1)
-  meshA.position.copy(A)
-
-  const meshB = createMesh(0x00ff00, 1)
-  meshB.position.copy(B)
+  // //生成可视化的小球。
+  // const A = new THREE.Vector3(0, 3, 0)
+  // const B = new THREE.Vector3(8, 0, 0)
+  // const meshA = createMesh(0x00ff00, 1)
+  // meshA.position.copy(A)
+  //
+  // const meshB = createMesh(0x00ff00, 1)
+  // meshB.position.copy(B)
 
   function createMesh(color, r) {
     const box = new THREE.CircleGeometry(r)
@@ -97,17 +98,39 @@ const init=()=> {
 
   }
 
+  //加载模型
+  const gltfLoader = new GLTFLoader();
+ gltfLoader.load(
+      'model.gltf',
+      (gltf) => {
 
-  group.add(meshA, meshB)
-  scene.add(group)
-  //生成箭头
-  const AB = B.clone().sub(A)
-  const L = AB.length()
-  //生成向量的方向
-  const dir = AB.clone().normalize()
-  //生成箭头
-  const arrowHelper = new THREE.ArrowHelper(dir, A, L)
-  group.add(arrowHelper)
+        if(gltf.scene){
+          gltf.scene.traverse(function(obj) {
+            if (obj.isMesh) {//判断是否是网格模型
+              obj.material = new THREE.MeshLambertMaterial({
+                color:'red',
+              });
+            }
+          });
+          group.add(gltf.scene)
+          scene.add(group)
+        }
+        // 监听图片加载完成，创建纹理对象
+      }
+  )
+
+
+
+  // group.add(meshA, meshB)
+
+  // //生成箭头
+  // const AB = B.clone().sub(A)
+  // const L = AB.length()
+  // //生成向量的方向
+  // const dir = AB.clone().normalize()
+  // //生成箭头
+  // const arrowHelper = new THREE.ArrowHelper(dir, A, L)
+  // group.add(arrowHelper)
 
 
 //   const dir = new THREE.Vector3();
@@ -193,7 +216,8 @@ const init=()=> {
     group.position.add(deltaPos);
     //作为子元素然后实现目标跟随的状态
     group.add(camera)
-
+    // camera.position.set(10, 10, 10);
+    // camera.lookAt(0, 0, 0);
 
     renderer.render(scene, camera);
     requestAnimationFrame(render);
