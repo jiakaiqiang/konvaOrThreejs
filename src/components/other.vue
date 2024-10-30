@@ -19,7 +19,7 @@ const  keywordMap =  reactive({
   keyA:false,
   keyD:false
 })
-const  group = new THREE.Group()
+let  object = {}
 
 const init=()=> {
 
@@ -77,8 +77,7 @@ const init=()=> {
   scene.add( helper );
   // 创建相机
   const camera= new THREE.PerspectiveCamera(75, threeValue.value.clientWidth / threeValue.value.clientHeight, 0.1, 1000)
-  camera.position.set(10, 10, 10);
-  camera.lookAt(0, 0, 0);
+
 
   // //生成可视化的小球。
   // const A = new THREE.Vector3(0, 3, 0)
@@ -106,14 +105,18 @@ const init=()=> {
 
         if(gltf.scene){
           gltf.scene.traverse(function(obj) {
+          object = gltf.scene
             if (obj.isMesh) {//判断是否是网格模型
-              obj.material = new THREE.MeshLambertMaterial({
-                color:'red',
+              obj.material = new THREE.MeshBasicMaterial({
+                color:0x00ff00
               });
             }
           });
-          group.add(gltf.scene)
-          scene.add(group)
+          scene.add(object)
+          object.add(camera)
+          camera.position.set(0, 0.5, 1);
+          camera.lookAt(0, 0.5, 1);
+          render()
         }
         // 监听图片加载完成，创建纹理对象
       }
@@ -157,8 +160,8 @@ const init=()=> {
 //   console.log(b,'test')
   threeValue.value.appendChild(renderer.domElement)
   //创建轨道控制器
-  const controls = new OrbitControls(camera, renderer.domElement)
-  controls.update()
+  // const controls = new OrbitControls(camera, renderer.domElement)
+  // controls.update()
 
 // 用三维向量表示玩家角色(人)运动漫游速度
   const v = new THREE.Vector3(0, 0, 0);//初始速度设置为0
@@ -171,34 +174,37 @@ const init=()=> {
     const deltaTime = clock.getDelta();
     if (keywordMap.keyW) {
       //先假设W键对应运动方向为z
-      const front = new THREE.Vector3(0, 0, 1);
+      const front = new THREE.Vector3();
+      object.getWorldDirection(front)
+      console.log(front,'front')
       if (v.length() <4) {//限制最高速度
         // W键按下时候，速度随着时间增加
-        v.add(front.multiplyScalar(a * deltaTime));
+        v.add(front.multiplyScalar(-a * deltaTime));
       }
     }
 
     if(keywordMap.keyS){
-      const back = new THREE.Vector3(0, 0, -1);
+      const back = new THREE.Vector3();
+      object.getWorldDirection(back)
       if (v.length() <4) {//限制最高速度
         // W键按下时候，速度随着时间增加
-        v.add(back.multiplyScalar(a * deltaTime));
+        v.add(back.multiplyScalar( a * deltaTime));
       }
     }
 
-    if(keywordMap.keyA){
+    if(keywordMap.keyD){
       //定义绕着y轴旋转
       const front = new THREE.Vector3();
       //获取相机的方向
-      group.getWorldDirection(front);
+      object.getWorldDirection(front);
       const up = new THREE.Vector3(0, 1, 0);//y方向
 
       const left = up.clone().cross(front);
       v.add(left.multiplyScalar(a * deltaTime));
     }
-    if(keywordMap.keyD){
+    if(keywordMap.keyA){
       const front = new THREE.Vector3();
-      group.getWorldDirection(front);
+      object.getWorldDirection(front);
       const up = new THREE.Vector3(0, 1, 0);//y方向
       //叉乘获得垂直于向量up和front的向量 左右与叉乘顺序有关,可以用右手螺旋定则判断，也可以代码测试结合3D场景观察验证
       const right = front.clone().cross(up);
@@ -213,18 +219,18 @@ const init=()=> {
 
     //更新玩家角色的位置  当v是0的时候，位置更新也不会变化
     const deltaPos = v.clone().multiplyScalar(deltaTime);
-    group.position.add(deltaPos);
+
+    object.position.add(deltaPos);
     //作为子元素然后实现目标跟随的状态
-    group.add(camera)
-    // camera.position.set(10, 10, 10);
-    // camera.lookAt(0, 0, 0);
+
+
 
     renderer.render(scene, camera);
     requestAnimationFrame(render);
     TWEEN.update()
   }
 
-  render();
+
   // document.addEventListener('mousemove',function(event){
   //   group.rotation.y -= event.movementX / 600;
   //   camera.rotation.x -= event.movementY / 600;
