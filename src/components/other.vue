@@ -12,7 +12,7 @@ import * as CANNON from 'cannon-es';
 const threeValue = ref(null)
 //创建场景
 const scene = new THREE.Scene()
-
+let leftButtonBool = ref(false)
 const  keywordMap =  reactive({
   keyW:false,
   keyS:false,
@@ -22,6 +22,11 @@ const  keywordMap =  reactive({
 let  object = {}
 
 const init=()=> {
+
+
+  // 添加网格辅助工具
+  scene.add( new THREE.GridHelper(100, 100, 0.01, 0x00ff00))
+
 
   const world = new CANNON.World();
 // 设置物理世界重力加速度
@@ -160,8 +165,8 @@ const init=()=> {
 //   console.log(b,'test')
   threeValue.value.appendChild(renderer.domElement)
   //创建轨道控制器
-  // const controls = new OrbitControls(camera, renderer.domElement)
-  // controls.update()
+  const controls = new OrbitControls(camera, renderer.domElement)
+  controls.update()
 
 // 用三维向量表示玩家角色(人)运动漫游速度
   const v = new THREE.Vector3(0, 0, 0);//初始速度设置为0
@@ -203,6 +208,7 @@ const init=()=> {
       v.add(left.multiplyScalar(a * deltaTime));
     }
     if(keywordMap.keyA){
+
       const front = new THREE.Vector3();
       object.getWorldDirection(front);
       const up = new THREE.Vector3(0, 1, 0);//y方向
@@ -224,17 +230,16 @@ const init=()=> {
     //作为子元素然后实现目标跟随的状态
 
 
-
     renderer.render(scene, camera);
     requestAnimationFrame(render);
     TWEEN.update()
   }
 
 
-  // document.addEventListener('mousemove',function(event){
-  //   group.rotation.y -= event.movementX / 600;
-  //   camera.rotation.x -= event.movementY / 600;
-  // })
+  document.addEventListener('mousemove',function(event){
+    object.rotation.y -= event.movementX / 600;
+    camera.rotation.x -= event.movementY / 600;
+  })
 }
 onMounted(()=>{
   init()
@@ -242,6 +247,7 @@ onMounted(()=>{
 
 document.addEventListener('keydown', (event) => {
   console.log(event.keyCode,'wewe')
+  leftButtonBool.value = true;
   if(event.keyCode==87){
     keywordMap.keyW = true
   }
@@ -257,6 +263,7 @@ document.addEventListener('keydown', (event) => {
 
 });
 document.addEventListener('keyup', (event) => {
+  leftButtonBool.value = false
   if(event.keyCode==87){
     keywordMap.keyW = false
   }

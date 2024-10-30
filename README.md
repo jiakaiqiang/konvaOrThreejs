@@ -1,3 +1,19 @@
+**模型辅助器**
+***网格辅助器***
+```js
+  // 添加网格辅助工具
+scene.add( new THREE.GridHelper(100, 100, 0.01, 0x00ff00))
+
+ // 添加坐标轴辅助工具
+scene.add( new THREE.AxesHelper(100))
+
+// 添加光线辅助工具
+
+scene.add(new THREE.PointLightHelper(new THREE.PointLight(0xff0000, 1, 100), .5))
+
+
+```
+
 **点模型**
 
 点模型使用的是缓冲类型的几何体 通过bufferAttribute定义说明几何体的顶点数据,此外我们通过定义顶点的材质数据生成顶点材质,在将材质和顶点几个体通过顶点模型对象points 添加到场景中。其他模型实现类似
