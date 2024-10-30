@@ -227,7 +227,7 @@ const init=()=> {
     const deltaPos = v.clone().multiplyScalar(deltaTime);
 
     object.position.add(deltaPos);
-    //作为子元素然后实现目标跟随的状态
+
 
 
     renderer.render(scene, camera);

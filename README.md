@@ -920,3 +920,55 @@ if(keywordMap.keyD){
 
 
 ```
+**关键帧动画**
+关键帧动画就是给定时间节点然后改变模型的属性(位置 旋转 缩放等)
+
+分两步：
+1.定义关键帧数据
+```js
+//定制位置
+//定义时间
+const time = [ 0,3,6]
+//定义数据 这个数据是 THREE.Vector3 类型
+const values =  [0,0,0,100,0,0,0,0,0]
+//定义关键帧  new THREE.keyframeTrack(属性名,时间,数据)
+const positionKF =  new THREE.KeyframeTrack('.position',time,values)
+
+//定义颜色
+
+const colorKF =  new THREE.KeyframeTrack('.material.color',[3,5],[1,0,0 ,0,0,1])
+//创建混合器
+const mixer = new THREE.AnimationMixer(mesh) //mesh 则是动画的模型数据
+//添加关键帧
+const clip = new THREE.AnimationClip('clip',6,[positionKF,colorKF])
+// 播放动动画
+const clipAction = mixer.clipAction(clip);
+clipAction.loop()//定义动画是否循环
+clipAction.play()//开始动画
+
+// 如果需要这个动画是一个周期的则需要更新动画的时间
+
+const clock = new THREE.Clock()
+function render(){
+    mixer.update(clock.getDelta())
+}
+
+
+
+
+ ```
+***动画的暂停和播放***
+```js
+clipAction.pause() //暂定动画
+clipAction.stop() //暂停动画
+clipAction.timeScale =1 //设置动画播放速度 默认为1
+
+```
+***外部模型已有的动画效果***
+一般在实际开发过程中我们不会自己定义动画，而是直接使用外部的模型动画。比如OBJ、FBX等格式的模型。
+此时我们只需要获取模型中的动画数据即可（gltf.scene.animations） 然后使用THREE.AnimationMixer(gltf.scene).clipAction(animation[0]) 
+生成播放动画对象，然后播放即可。
+
+
+
+

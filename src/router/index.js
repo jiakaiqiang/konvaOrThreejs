@@ -10,6 +10,8 @@ const router = createRouter({
         {path:"/lights", component: () => import('../components/light.vue')},
         {path: '/konvaSelect', component: () => import('../components/konvaSelect.vue')},
         {path: '/konvaCanvas', component: () => import('../components/konvaCanvas.vue')},
+        {path:"/keys",component:()=>import('../components/keys.vue')},
+        {path:"/line",component:()=>import('../components/line.vue')}
     ],
 })
 export default router
