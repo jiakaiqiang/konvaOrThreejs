@@ -22,6 +22,7 @@ const  keywordMap =  reactive({
 let  object = {}
 
 const init=()=> {
+  scene.add(new THREE.AxesHelper(5))
 
 
   // 添加网格辅助工具

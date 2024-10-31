@@ -1,3 +1,7 @@
+**threejs 中的旋转方向**
+
+threejs中旋转的角度采用的是弧度计算,旋转的方向采用的是右手规则，四指指向的方向为z轴正方向, 逆时针是正方向。顺时针是负方向
+
 **模型辅助器**
 ***网格辅助器***
 ```js
@@ -888,6 +892,7 @@ render();
 相机跟着玩家走的思路在于,我们不通过轨道控制器去修改相机的位置。而是将相机和玩家作为一个整体添加到一个group中添加到组中 实现了相机跟随的效果。  相机的far角度会影响视角查看的范围大小。
 
 **物品左右移动**
+
 ```js
 首先物品左右移动的话我们通过鼠标的移动控制物品的渲染角度 同时控制相机的旋转角度 实现物品的移动, 但是发现物品在移动的时候 只能上下左右移动 斜着走
 这是因为我们固定了物品的移动方向  我们可以通过group.getWorldDirection()来获取物品的方向向量  从而控制物品的移动
@@ -921,6 +926,7 @@ if(keywordMap.keyD){
 
 ```
 **关键帧动画**
+
 关键帧动画就是给定时间节点然后改变模型的属性(位置 旋转 缩放等)
 
 分两步：
@@ -958,6 +964,7 @@ function render(){
 
  ```
 ***动画的暂停和播放***
+
 ```js
 clipAction.pause() //暂定动画
 clipAction.stop() //暂停动画
@@ -965,9 +972,96 @@ clipAction.timeScale =1 //设置动画播放速度 默认为1
 
 ```
 ***外部模型已有的动画效果***
+
 一般在实际开发过程中我们不会自己定义动画，而是直接使用外部的模型动画。比如OBJ、FBX等格式的模型。
 此时我们只需要获取模型中的动画数据即可（gltf.scene.animations） 然后使用THREE.AnimationMixer(gltf.scene).clipAction(animation[0]) 
 生成播放动画对象，然后播放即可。
+**物理引擎cannonjs**
+所谓的物理引擎其实就是数学计算的引擎，通过数学计算来模拟物理世界。比如在物理引擎中，我们通过向量来模拟物体的速度和位置。物理引擎我们用到的库是cannon.js
+通常我们在项目中使用的都是cannon-es 版本。 这个版本支持es6模块化以及typescript.   
+在cannon-es中我们也有物体的物理属性 比如 质量 材质 物体坐标 等  通过物理和物理之间必须通过世界来关联 比如 
+```js
+//创建物体
+const shape =  new CONNON.Shape(1)
+const sphereMaterial = new CANNON.Material()
+// 定义物体的属性
+const shapeBody=  new CONNON.body({
+ shape:shape,//碰撞体的几何形状
+ position: new  CONNON.Vec3(10,0,0), //碰撞体的位置
+ material:sphereMaterial,//设置物体的材质
+ mass:0.3 //碰撞体的质量
+})
+
+// 创建世界
+
+const World    = new CONNON.World()
+
+//设置世界的重力  
+World.gravity.set(0,-9.8,0)
+
+//将物体添加到世界
+World.addBody(shapeBody)
+
+
+
+在模型的render 方法中添加物理引擎的更新代码
+function render(){
+ world.step(1/60);//更新物理计算   用于近似计算
+}
+
+
+
+// 通过body.position 我们可以获取到物体场景下物体的位置 可以将这个位置赋值给模型的位置 实现模型的位置更新
+
+mesh.position.copy(body.position)
+
+
+
+
+
+```
+**碰撞反弹**
+
+实际的场景中模型不可以一直的运动在触碰到其他物体也不会停止（穿模） 而是遇到其他物体 会反弹或者不能移动的效果.
+
+```js
+// 如上我们定义了碰撞体，但是没有设置碰撞体的材质。
+
+//创建物理环境的碰撞体
+
+
+const groundMaterial = new CANNON.Material()
+
+const groundBody =  new CONNON.Body({
+ mass:0,
+ material:groundMaterial,
+ shape:new CANNON.Plane() //平面
+})
+// 改变平面默认的方向，法线默认沿着z轴，旋转到平面向上朝着y方向
+groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);//旋转规律类似threejs 平面
+//设置碰撞物体的材质后才能 模拟出真实碰撞的效果 铁落在地上和皮球落在地上的碰撞效果
+
+
+// 设置地面材质和小球材质之间的碰撞反弹恢复系数
+const contactMaterial = new CANNON.ContactMaterial(groundMaterial, sphereMaterial, {
+ restitution: 0.7, //反弹恢复系数
+})
+
+//将材质添加到物理世界中
+
+World.addContactMaterial(contactMaterial)
+
+
+
+同时我们还需要再模型中设置碰撞后的旋转方向
+planeMesh.rotateX(-Math.PI / 2);
+
+```
+物理模型和模型的原点坐标默认是一致的都是0,0,0点   在物理坐标中 通过new CANNON.Box(new CANNON.Vec3(1,1,1)) 则创建的是一个长2 宽2 高2 的立方体
+因为new CANNON.Box()的长宽高分别是创建立方的长宽高的一半。
+
+CONNON中 如果想表示多面体的话则采用new CANNON.ConvexPolyhedron()  用顶点组和索引组来表示 多面体的顶点坐标和索引坐标
+
 
 
 
